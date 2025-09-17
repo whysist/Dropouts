@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Risk Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Student Risk Dashboard</h1>
+    </header>
+    <div class="container">
+
+        <!-- Upload Form -->
+        <form id="uploadForm">
+            <label>Attendance File:</label>
+            <input type="file" name="attendance" required>
+            <label>Test Scores File:</label>
+            <input type="file" name="scores" required>
+            <label>Fee File:</label>
+            <input type="file" name="fees" required>
+            <button type="submit">Upload & Analyze</button>
+        </form>
+
+        <!-- Summary Cards -->
+        <div class="cards">
+            <div class="card red" id="highRisk">High Risk: 0</div>
+            <div class="card yellow" id="mediumRisk">Medium Risk: 0</div>
+            <div class="card green" id="lowRisk">Low Risk: 0</div>
+        </div>
+
+        <!-- Student Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Risk</th>
+                    <th>Attendance %</th>
+                    <th>Score</th>
+                    <th>Fee Status</th>
+                </tr>
+            </thead>
+            <tbody id="studentTableBody">
+            </tbody>
+        </table>
+
+    </div>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
