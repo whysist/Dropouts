@@ -4,45 +4,31 @@ import os
 from flask_cors import CORS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)  # Allow CORS for frontend-backend communication
 
 app.config['UPLOAD_FOLDER'] = 'uploads'
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
-
-# ML model loading example (uncomment and modify as needed)
-# import joblib
-# model = joblib.load('your_model_path.pkl')
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/upload', methods=['POST'])
-def upload_files():
+def upload_file():
     try:
-        files = request.files
-        required_keys = {'attendance', 'scores', 'fees'}
-        if not required_keys.issubset(files.keys()):
-            return jsonify({'error': 'Missing one or more required files: attendance, scores, fees'}), 400
+        if 'student_data' not in request.files:
+            return jsonify({'error': 'Missing student data file.'}), 400
 
-        attendance_file = pd.read_excel(files['attendance'])
-        scores_file = pd.read_excel(files['scores'])
-        fee_file = pd.read_excel(files['fees'])
+        file = request.files['student_data']
+        df = pd.read_excel(file)
 
-        # Validate columns exist in each file
-        for df, name in zip([attendance_file, scores_file, fee_file], ['attendance', 'scores', 'fees']):
-            if 'StudentID' not in df.columns:
-                return jsonify({'error': f"Missing 'StudentID' column in {name} file"}), 400
+        # Validate all required columns exist
+        required_columns = {'StudentID', 'Name', 'AttendancePct', 'AverageScore', 'FeeOverdue'}
+        if not required_columns.issubset(df.columns):
+            return jsonify({'error': f"Missing columns. Required: {', '.join(required_columns)}"}), 400
 
-        # Merge spreadsheets on StudentID
-        df = attendance_file.merge(scores_file, on='StudentID').merge(fee_file, on='StudentID')
-
-        # Optional: ML Model prediction
-        # features = df[['AttendancePct', 'AverageScore', 'FeeOverdue']].values
-        # df['risk_level'] = model.predict(features)
-
-        # Rule-based risk calculation (fallback or baseline)
+        # Rule-based risk calculation
         def calculate_risk(row):
             if row['AttendancePct'] < 75 or row['AverageScore'] < 50 or row['FeeOverdue'] == 1:
                 return 'High'
@@ -53,7 +39,7 @@ def upload_files():
 
         df['risk_level'] = df.apply(calculate_risk, axis=1)
 
-        result = df[['StudentID','Name','AttendancePct','AverageScore','FeeOverdue','risk_level']].to_dict(orient='records')
+        result = df[['StudentID', 'Name', 'AttendancePct', 'AverageScore', 'FeeOverdue', 'risk_level']].to_dict(orient='records')
         return jsonify(result)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
