@@ -9,7 +9,7 @@ form button { background: #3498DB; color: white; border: none; cursor: pointer; 
 .cards { display: flex; gap: 20px; margin-bottom: 30px; }
 .card { flex: 1; padding: 20px; border-radius: 8px; color: white; text-align: center; }
 .card.red { background: #E74C3C; }
-.card.yellow { background: #F1C40F; }
+.card.yellow { background: #b39c43; }
 .card.green { background: #2ECC71; }
 
 table { width: 100%; border-collapse: collapse; margin-top: 20px; background: white; border-radius: 8px; overflow: hidden; }

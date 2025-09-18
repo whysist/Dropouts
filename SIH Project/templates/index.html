@@ -1,52 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Risk Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-</head>
-<body>
-    <header>
-        <h1>Student Risk Dashboard</h1>
-    </header>
-    <div class="container">
+    <title>Student Dropout Risk Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
 
-        <!-- Upload Form -->
-        <form id="uploadForm">
-            <label>Attendance File:</label>
-            <input type="file" name="attendance" required>
-            <label>Test Scores File:</label>
-            <input type="file" name="scores" required>
-            <label>Fee File:</label>
-            <input type="file" name="fees" required>
-            <button type="submit">Upload & Analyze</button>
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px #ccc;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #f4f4f4;
+        }
+
+        /* These CSS classes match the new logic */
+        .high {
+            background: #ffcccc;
+        }
+
+        .medium {
+            background: #fff3cd;
+        }
+
+        .low {
+            background: #d4edda;
+        }
+
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        form {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Student Dropout Risk Prediction</h1>
+        <form id="uploadForm" method="POST" enctype="multipart/form-data">
+            <label for="file">Upload Student Data (.csv or .xlsx):</label>
+            <input type="file" name="file" id="file" accept=".csv,.xlsx,.xls" required>
+            <button type="submit">Predict</button>
         </form>
 
-        <!-- Summary Cards -->
-        <div class="cards">
-            <div class="card red" id="highRisk">High Risk: 0</div>
-            <div class="card yellow" id="mediumRisk">Medium Risk: 0</div>
-            <div class="card green" id="lowRisk">Low Risk: 0</div>
-        </div>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
 
-        <!-- Student Table -->
+        {% if predictions %}
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Roll No</th>
                     <th>Name</th>
-                    <th>Risk</th>
-                    <th>Attendance %</th>
-                    <th>Score</th>
+                    <th>Attendance</th>
+                    <th>Sem 1 score</th>
+                    <th>Sem 2 score</th>
                     <th>Fee Status</th>
+                    <th>Risk Level</th>
                 </tr>
             </thead>
-            <tbody id="studentTableBody">
+            <tbody>
+                {% for p in predictions %}
+                <tr class="{{ p.risk_level.split(' ')[0]|lower }}">
+                    <td>{{ p.Roll_No }}</td>
+                    <td>{{ p.Name }}</td>
+                    <td>{{ p.Attendance }}</td>
+                    <td>{{ p.Sem_1_score }}</td>
+                    <td>{{ p.Sem_2_score }}</td>
+                    <td>{{ p.FeeStatus }}</td>
+                    <td>{{ p.risk_level }}</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
-
+        {% endif %}
     </div>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>
