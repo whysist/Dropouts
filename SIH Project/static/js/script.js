@@ -6,7 +6,6 @@ document.addEventListener('DOMContentLoaded', function() {
 		form.addEventListener('submit', async (e) => {
 			e.preventDefault();
 			const formData = new FormData(form);
-
 			try {
 				const response = await fetch('/', { method: 'POST', body: formData });
 				if (!response.ok) throw new Error('Upload failed!');

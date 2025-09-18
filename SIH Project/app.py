@@ -95,6 +95,6 @@ def index():
         return render_template('index.html', predictions=predictions, error=error)
     # Initial page load
     return render_template('index.html', predictions=None, error=None)
-
+  
 if __name__ == '__main__':
     app.run(debug=True)
