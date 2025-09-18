@@ -10,12 +10,19 @@ form.addEventListener('submit', async (e) => {
 
     try {
         const response = await fetch('/upload', { method: 'POST', body: formData });
-        if (!response.ok) throw new Error('Upload failed!');
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Upload failed!');
+        }
         const data = await response.json();
 
         // Reset counts
         let high = 0, medium = 0, low = 0;
         studentTable.innerHTML = '';
+
+        if (data.length === 0) {
+            studentTable.innerHTML = '<tr><td colspan="6" style="text-align:center;">No data found.</td></tr>';
+        }
 
         data.forEach(student => {
             const tr = document.createElement('tr');
