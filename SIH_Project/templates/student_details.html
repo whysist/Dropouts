@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Student Details</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Student Details</h1>
+        {% if student %}
+            <h2>Roll No: {{ student['Roll_No'] }}</h2>
+            <h2>Name: {{ student['Name'] }}</h2>
+            
+            <!-- Semester Marks Trend -->
+            <h3>Semester Marks Trend</h3>
+            <canvas id="marksChart" width="400" height="200"></canvas>
+            
+            <!-- Subject-wise Performance Progression -->
+            <h3 style="margin-top: 30px;">Subject-wise Performance Progression</h3>
+            <canvas id="subjectChart" width="400" height="200"></canvas>
+            
+            <script>
+                // Overall Semester Marks Line Chart
+                const ctx = document.getElementById('marksChart').getContext('2d');
+                const studentMarks = {{ marks|tojson }};
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Sem 1', 'Sem 2'],
+                        datasets: [{
+                            label: 'Overall Semester Marks',
+                            data: studentMarks,
+                            borderColor: '#3498DB',
+                            backgroundColor: 'rgba(52,152,219,0.2)',
+                            fill: true,
+                            tension: 0.3,
+                            borderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Overall Semester Performance'
+                            }
+                        }
+                    }
+                });
+
+                // Subject-wise Progress Line Chart
+                const ctx2 = document.getElementById('subjectChart').getContext('2d');
+                
+                // Get subject scores for both semesters
+                const mathScores = [{{ student.get('Math_s1', 0) }}, {{ student.get('Math_s2', 0) }}];
+                const engScores = [{{ student.get('Eng_s1', 0) }}, {{ student.get('Eng_s2', 0) }}];
+                const sciScores = [{{ student.get('Sci_s1', 0) }}, {{ student.get('Sci_s2', 0) }}];
+                
+                new Chart(ctx2, {
+                    type: 'line',
+                    data: {
+                        labels: ['Semester 1', 'Semester 2'],
+                        datasets: [{
+                            label: 'Mathematics',
+                            data: mathScores,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }, {
+                            label: 'English',
+                            data: engScores,
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }, {
+                            label: 'Science',
+                            data: sciScores,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.3,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { 
+                                beginAtZero: true,
+                                max: 100
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Subject-wise Performance Progression (Sem 1 → Sem 2)'
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            }
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
+                        }
+                    }
+                });
+            </script>
+        {% else %}
+            <h2>Student not found.</h2>
+        {% endif %}
+        <a href="{{ url_for('index') }}" class="back-button">Back to List</a>
+    </div>
+</body>
+</html>

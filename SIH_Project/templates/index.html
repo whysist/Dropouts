@@ -8,10 +8,11 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
         }
 
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 40px auto;
             padding: 20px;
             background: #fff;
@@ -21,26 +22,62 @@
 
         h1 {
             text-align: center;
+            color: #333;
+        }
+
+        .model-metrics {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .model-metrics h3 {
+            margin-top: 0;
+            color: #0c5460;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .metric-item {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 1px solid #d1ecf1;
+        }
+
+        .metric-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #0c5460;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 14px;
         }
 
         th,
         td {
-            padding: 10px;
+            padding: 8px;
             border: 1px solid #ddd;
             text-align: center;
         }
 
         th {
             background: #f4f4f4;
+            font-weight: bold;
         }
 
-        /* These CSS classes match the new logic */
+        /* Risk level row highlights */
         .high {
             background: #ffcccc;
         }
@@ -61,6 +98,36 @@
 
         form {
             margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .confidence-high {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .confidence-medium {
+            color: #ffc107;
+            font-weight: bold;
+        }
+
+        .confidence-low {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .upload-section {
+            border: 2px dashed #ccc;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        tr:hover {
+            background: #f1f1f1;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -68,43 +135,66 @@
 <body>
     <div class="container">
         <h1>Student Dropout Risk Prediction</h1>
-        <form id="uploadForm" method="POST" enctype="multipart/form-data">
-            <label for="file">Upload Student Data (.csv or .xlsx):</label>
-            <input type="file" name="file" id="file" accept=".csv,.xlsx,.xls" required>
-            <button type="submit">Predict</button>
-        </form>
+
+        <div class="upload-section">
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                <label for="Attfile">Upload Attendance Data (.csv or .xlsx):</label><br><br>
+                <input type="file" name="Attfile" id="Attfile" accept=".csv,.xlsx,.xls" required>
+                <br><br>
+                <label for="Marksfile">Upload Marks Data (.csv or .xlsx):</label><br><br>
+                <input type="file" name="Marksfile" id="Marksfile" accept=".csv,.xlsx,.xls" required>
+                <br><br>
+                <label for="Feesfile">Upload Fees Data (.csv or .xlsx):</label><br><br>
+                <input type="file" name="Feesfile" id="Feesfile" accept=".csv,.xlsx,.xls" required>
+                <br><br>
+                <button type="submit">Predict Risk Levels</button>
+            </form>
+        </div>
 
         {% if error %}
         <div class="error">{{ error }}</div>
         {% endif %}
 
         {% if predictions %}
+        <h3>Prediction Results</h3>
         <table>
             <thead>
                 <tr>
                     <th>Roll No</th>
                     <th>Name</th>
                     <th>Attendance</th>
-                    <th>Sem 1 score</th>
-                    <th>Sem 2 score</th>
+                    <th>Sem 1 Score</th>
+                    <th>Sem 2 Score</th>
                     <th>Fee Status</th>
                     <th>Risk Level</th>
+                    <th>Model Confidence</th>
                 </tr>
             </thead>
             <tbody>
                 {% for p in predictions %}
                 <tr class="{{ p.risk_level.split(' ')[0]|lower }}">
-                    <td>{{ p.Roll_No }}</td>
-                    <td>{{ p.Name }}</td>
-                    <td>{{ p.Attendance }}</td>
-                    <td>{{ p.Sem_1_score }}</td>
-                    <td>{{ p.Sem_2_score }}</td>
-                    <td>{{ p.FeeStatus }}</td>
-                    <td>{{ p.risk_level }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.Roll_No }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.Name }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.Attendance }}%</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.Sem_1_score }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.Sem_2_score }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.FeeStatus }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">{{ p.risk_level }}</td>
+                    <td class="{% if p.confidence|replace('%', '')|float >= 80 %}confidence-high{% elif p.confidence|replace('%', '')|float >= 60 %}confidence-medium{% else %}confidence-low{% endif %}"
+                        onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'">
+                        {{ p.confidence }}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <div style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <h4>Legend:</h4>
+            <p><strong>Risk Level:</strong> Based on dropout probability - Low (≤40%), Medium (40-70%), High (>70%)</p>
+            <p><strong>Model Confidence:</strong> How certain the model is about its prediction</p>
+            <p><strong>Dropout Probability:</strong> Specific probability that the student will drop out</p>
+        </div>
         {% endif %}
     </div>
 </body>
