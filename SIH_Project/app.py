@@ -1,16 +1,97 @@
 import pickle
 import pandas as pd
-from flask import Flask, request, render_template
+from flask import Flask,request, render_template,jsonify,redirect,url_for,session
 import numpy as np
+from flask_sqlalchemy import SQLAlchemy
+from werkzeug.security import generate_password_hash,check_password_hash
+from dotenv import load_dotenv
+import os
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql import func
+# from flask_migrate import Migrate
+
+
+load_dotenv()
+
+DB_USER = os.getenv("DB_USER")
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_NAME = os.getenv("DB_NAME")
+
 
 app = Flask(__name__)
 
+app.config['SQLALCHEMY_DATABASE_URI']=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS']=False
+app.secret_key='supersecretkey'
+
+db=SQLAlchemy(app)
+# migrate = Migrate(app, db)
+
+class User(db.Model):                    
+    __tablename__ = "users"
+    username = db.Column(db.String(80), primary_key=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    phone = db.Column(db.String(15))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    # created_at = db.Column(db.DateTime(timezone=True), server_default=func.now())
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+@app.route('/register',methods=['GET','POST'])
+def register():
+    if request.method=='POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        email = request.form.get('email')
+        phone=request.form.get('phone')
+
+        if not username or not password or not email:
+            return render_template("register.html", error="Username and password must not be left blank")
+
+        if User.query.filter_by(email=email).first():
+            return render_template("register.html", error="Email already registered")
+
+        if User.query.filter_by(email=email).first():
+            return render_template("register.html", error="Email already registered")
+
+        new_user = User(username=username, phone=phone, email=email)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+
+        return redirect(url_for("login"))
+
+    return render_template("register.html")
+
+@app.route('/login',methods=['GET','POST'])
+def login():
+    if request.method=='POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            session["username"] = user.username
+            return redirect(url_for("index"))   # go to prediction page
+        else:
+            return render_template("login.html", error="Invalid username or password")
+    return render_template("login.html")
+        
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "dropout_prediction.pkl")
+    
 # Load the trained model (replace with actual model loading)
 try:
-    with open('Dropouts\\SIH Project\\dropout_prediction.pkl', 'rb') as f:
+    with open(MODEL_PATH, 'rb') as f:
         model = pickle.load(f)
 except Exception:
     model = None
+    print("model nope")
+
 
 FIELDS=['Marital status', 'Application mode', 'Daytime/evening attendance',
        'Previous qualification', "Mother's occupation", "Father's occupation",
@@ -24,14 +105,6 @@ FIELDS=['Marital status', 'Application mode', 'Daytime/evening attendance',
        'Curricular units 2nd sem (grade)', 'Attendance']
 
 REQUIRED_FIELDS = FIELDS + ["Roll_No", "Name"]
-
-# def get_cumulative_score(row):
-#     sem1 = row.get("Curricular units 1st sem (grade)", 0)
-#     sem2 = row.get("Curricular units 2nd sem (grade)", 0)
-#     try:
-#         return round((float(sem1) + float(sem2)) / 2, 2)
-#     except Exception:
-#         return None
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -97,4 +170,4 @@ def index():
     return render_template('index.html', predictions=None, error=None)
   
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000,debug=True)

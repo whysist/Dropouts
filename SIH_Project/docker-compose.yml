@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:17
+    restart: always
+    environment:
+      POSTGRES_USER: SIH_demo
+      POSTGRES_PASSWORD: SIH_DEMO
+      POSTGRES_DB: user_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  web:
+    build: .
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_USER=SIH_demo
+      - DB_PASSWORD=SIH_DEMO
+      - DB_HOST=db
+      - DB_NAME=user_db
+    depends_on:
+      - db
+
+volumes:
+  db_data:
