@@ -94,19 +94,116 @@
             <tbody>
                 {% for p in predictions %}
                 <tr class="{{ p.risk_level.split(' ')[0]|lower }}">
-                    <td>{{ p.Roll_No }}</td>
-                    <td>{{ p.Name }}</td>
-                    <td>{{ p.Attendance }}</td>
-                    <td>{{ p.Sem_1_score }}</td>
-                    <td>{{ p.Sem_2_score }}</td>
-                    <td>{{ p.FeeStatus }}</td>
-                    <td>{{ p.risk_level }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.Roll_No }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.Name }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.Attendance }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.Sem_1_score }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.Sem_2_score }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.FeeStatus }}</td>
+                    <td onclick="window.location.href='{{ url_for('student_details', roll_no=p.Roll_No) }}'" style="cursor: pointer;">{{ p.risk_level }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- Mentor Alert Section -->
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #dc3545;">
+            <h3>🚨 Mentor Alert System</h3>
+            <p>Send automated alerts to mentors about high-risk students (marked in red)</p>
+            
+            <div style="margin: 15px 0;">
+                <label for="mentorEmail">Mentor Email:</label>
+                <input type="email" id="mentorEmail" placeholder="mentor@example.com" required 
+                       style="padding: 8px; margin: 0 10px; border: 1px solid #ddd; border-radius: 4px; width: 250px;">
+                
+                <button onclick="sendMentorAlert()" id="alertButton"
+                        style="background: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+                    📧 Send High-Risk Alert
+                </button>
+            </div>
+            
+            <div id="alertMessage" style="margin-top: 10px; font-weight: bold;"></div>
+            
+            <small style="color: #666;">
+                Note: This will send an email with details of all students marked as "High Risk" to the specified mentor.
+            </small>
+        </div>
         {% endif %}
     </div>
+
+    <script>
+        async function sendMentorAlert() {
+            const mentorEmail = document.getElementById('mentorEmail').value;
+            const alertButton = document.getElementById('alertButton');
+            const alertMessage = document.getElementById('alertMessage');
+            
+            if (!mentorEmail) {
+                alertMessage.innerHTML = '<span style="color: red;">Please enter a mentor email address</span>';
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(mentorEmail)) {
+                alertMessage.innerHTML = '<span style="color: red;">Please enter a valid email address</span>';
+                return;
+            }
+            
+            // Disable button and show loading
+            alertButton.disabled = true;
+            alertButton.innerHTML = '📧 Sending...';
+            alertMessage.innerHTML = '<span style="color: blue;">Sending alert email...</span>';
+            
+            try {
+                const response = await fetch('/send_mentor_alert', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        mentor_email: mentorEmail,
+                        sender_email: 'system@yourdomain.com',  // Configure with your actual email
+                        sender_password: 'your_app_password'     // Configure with your app password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alertMessage.innerHTML = '<span style="color: green;">✅ ' + result.message + '</span>';
+                } else {
+                    alertMessage.innerHTML = '<span style="color: red;">❌ ' + result.message + '</span>';
+                }
+                
+            } catch (error) {
+                alertMessage.innerHTML = '<span style="color: red;">❌ Error: Failed to send alert. Please try again.</span>';
+                console.error('Error:', error);
+            } finally {
+                // Re-enable button
+                alertButton.disabled = false;
+                alertButton.innerHTML = '📧 Send High-Risk Alert';
+                
+                // Clear message after 5 seconds
+                setTimeout(() => {
+                    alertMessage.innerHTML = '';
+                }, 5000);
+            }
+        }
+        
+        // Check for high-risk students on page load and show count
+        document.addEventListener('DOMContentLoaded', function() {
+            const highRiskRows = document.querySelectorAll('tr.high');
+            if (highRiskRows.length > 0) {
+                const alertSection = document.querySelector('.container > div[style*="border-left: 4px solid #dc3545"]');
+                if (alertSection) {
+                    const countMessage = document.createElement('div');
+                    countMessage.style.cssText = 'background: #fff3cd; padding: 10px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; color: #856404;';
+                    countMessage.innerHTML = `⚠️ ${highRiskRows.length} student(s) identified as HIGH RISK and require immediate attention!`;
+                    alertSection.insertBefore(countMessage, alertSection.children[1]);
+                }
+            }
+        });
+    </script>
 </body>
 
 </html>
