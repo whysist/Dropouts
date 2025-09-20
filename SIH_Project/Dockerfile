@@ -9,10 +9,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 4. Copy all project files into /app
-COPY app.py .
-COPY dropout_prediction.pkl .
-COPY templates/ templates/
-COPY static/ static/
+COPY . .
 
 # 5. Expose port 5000
 EXPOSE 5000
