@@ -1,117 +1,207 @@
-# Dropouts
-SIH problem statement 25102 (AI-based drop-out prediction and counseling system)
+# Dropouts – AI-Based Student Dropout Prediction & Counseling
 
-## Introduction 
-In many educational institutions, the data that signals a student is struggling is scattered across isolated spreadsheets—attendance in one, test scores in another. By the time
-term-end marks officially confirm a problem, many of these students have already disengaged beyond recovery. This project tackles this challenge by building an early-warning
-dashboard for educators. It automatically ingests and fuses disparate student data into a single, intuitive interface. Using clear, rule-based logic and machine learning
-approaches, the system flags at-risk students in real-time, empowering mentors to intervene proactively long before it's too late. Our goal is to transform fragmented data into
-an actionable tool that helps reduce dropout rates and foster student success.
+Dropouts is a Flask-based web application that predicts student dropout risk from institutional data and presents results in an educator-friendly dashboard.  
+This project was built for **SIH problem statement 25102**.
 
-## Requirements
+## Table of Contents
+- [Overview](#overview)
+- [Key Features](#key-features)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
+- [Data Requirements](#data-requirements)
+- [Local Setup](#local-setup)
+- [Run with Docker](#run-with-docker)
+- [Configuration](#configuration)
+- [Application Routes](#application-routes)
+- [Model Artifacts and Scripts](#model-artifacts-and-scripts)
+- [Known Limitations](#known-limitations)
+- [Dataset Source](#dataset-source)
 
-#### Functional Requirements
-1. Data Upload: Users must be able to upload multiple spreadsheets (attendance, scores, etc.).
-2. Data Merging: The system must automatically link data for the same student across different files (using a unique ID like a student roll number).
-3. Risk Calculation: The system must apply predefined logic to calculate a risk score for each student.
-4. Dashboard View: Display an overview of all students, sorted by risk level.
-5. Detailed Student Profile: Show individual student data, trends over time (e.g., a chart of their test scores), and the specific factors contributing to their risk score.
-6. Automated Notifications: Send scheduled email reports to registered mentors.
+## Overview
+Many institutions keep attendance, fee, and performance data in separate files. This application merges those records using a common student identifier, runs a trained machine learning model, and classifies students as low/medium/high dropout risk.
 
-#### Non-Functional Requirements
-1. Usability: The interface must be extremely intuitive for non-technical users (teachers, counselors).
-2. Transparency: The reason for a student's risk score must be clearly explained.
-3. Low Maintenance: The system should run without needing constant technical intervention.
-4. Configurability: Ideally, administrators should be able to tweak the risk thresholds (e.g., change the definition of "low attendance" from <75% to <80%).
+The goal is to help teachers and mentors intervene earlier with students who need support.
 
-## Tech Stack 
-_**Backend**_: Python with Flask (lightweight and fast to set up) and Pandas (for data manipulation).
+## Key Features
+- Upload 3 input files (Attendance, Marks, Fees) in `.csv`, `.xls`, or `.xlsx` format.
+- Automatically merge data using `Roll_No`.
+- Predict dropout probability with a pre-trained model (`dropout_prediction.pkl`).
+- Show risk level categories:
+  - **Low**: `<= 40%`
+  - **Medium**: `> 40% and < 70%`
+  - **High**: `>= 70%`
+- Display model confidence per student.
+- Provide student-level details with Chart.js visualizations.
+- User registration/login with password hashing.
+- PostgreSQL-backed user storage (SQLAlchemy ORM).
+- Dockerized deployment with `docker-compose`.
 
-_**Frontend**_: Plain HTML, CSS, and JavaScript with Chart.js (for graphs) and Bootstrap (for a clean UI without much effort).
+## Tech Stack
+**Backend**
+- Python 3.11
+- Flask
+- SQLAlchemy / Flask-SQLAlchemy
+- Pandas, NumPy
+- scikit-learn, XGBoost
+- psycopg2-binary
 
+**Frontend**
+- Jinja2 templates
+- HTML/CSS/JavaScript
+- Bootstrap (login/register pages)
+- Chart.js (student charts)
 
-### Dataset Characteristics 
+**Database**
+- PostgreSQL 17 (containerized in compose setup)
 
-https://www.kaggle.com/datasets/thedevastator/higher-education-predictors-of-student-retention
+## Project Structure
+```text
+Dropouts/
+├── README.md
+└── SIH_Project/
+    ├── app.py
+    ├── ml_model.py
+    ├── update_metrics.py
+    ├── requirements.txt
+    ├── Dockerfile
+    ├── docker-compose.yml
+    ├── .env
+    ├── dropout_prediction.pkl
+    ├── xgboost_model.json
+    ├── Datasets/
+    │   ├── Dataset1.csv
+    │   └── student_records_weighted.csv
+    ├── templates/
+    │   ├── index.html
+    │   ├── student_details.html
+    │   ├── login.html
+    │   └── register.html
+    └── migrations/
+```
 
-1.Marital status: The marital status of the student. (Categorical)
+## How It Works
+1. User uploads attendance, marks, and fees files from the main page.
+2. Backend reads each file and merges on `Roll_No`.
+3. Required features are extracted and passed to the loaded model.
+4. Model predicts classes/probabilities (`predict` + `predict_proba`).
+5. App maps dropout probability to risk tiers and renders a result table.
+6. Clicking a student row opens detailed visual performance charts.
 
-2.Application mode: The method of application used by the student. (Categorical)
+## Data Requirements
+The merged dataset must include:
+- `Roll_No`
+- `Name`
+- All model input fields listed below:
+  - `Marital status`
+  - `Application mode`
+  - `Daytime/evening attendance`
+  - `Previous qualification`
+  - `Mother's occupation`
+  - `Father's occupation`
+  - `Displaced`
+  - `Debtor`
+  - `Tuition fees up to date`
+  - `Scholarship holder`
+  - `Age at enrollment`
+  - `International`
+  - `Curricular units 1st sem (evaluations)`
+  - `Curricular units 1st sem (approved)`
+  - `Curricular units 1st sem (grade)`
+  - `Curricular units 2nd sem (evaluations)`
+  - `Curricular units 2nd sem (approved)`
+  - `Curricular units 2nd sem (grade)`
+  - `Attendance`
 
-3.Application order: The order in which the student applied. (Numerical)
+If required columns are missing, the app returns a validation error.
 
-4.Course: The course taken by the student. (Categorical)
+## Local Setup
+From `/home/runner/work/Dropouts/Dropouts/SIH_Project`:
 
-5.Daytime/evening attendance: Whether the student attends classes during the day or in the evening. (Categorical)
+1. Create and activate a virtual environment:
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate   # Linux/macOS
+   ```
 
-6.Previous qualification: The qualification obtained by the student before enrolling in higher education. (Categorical)
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-7.Nacionality: The nationality of the student. (Categorical)
+3. Ensure PostgreSQL is running and create database `user_db`.
 
-8.Mother's qualification: The qualification of the student's mother. (Categorical)
+4. Configure environment variables (see [Configuration](#configuration)).
 
-9.Father's qualification: The qualification of the student's father. (Categorical)
+5. Start the app:
+   ```bash
+   python app.py
+   ```
 
-10.Mother's occupation: The occupation of the student's mother. (Categorical)
+6. Open:
+   ```text
+   http://localhost:5000
+   ```
 
-11.Father's occupation: The occupation of the student's father. (Categorical)
+## Run with Docker
+From `/home/runner/work/Dropouts/Dropouts/SIH_Project`:
 
-12.Displaced: Whether the student is a displaced person. (Categorical)
+```bash
+docker compose up --build
+```
 
-13.Educational special needs: Whether the student has any special educational needs. (Categorical)
+This starts:
+- `web` service on `http://localhost:5000`
+- `db` service (PostgreSQL) on port `5432`
 
-14.Debtor: Whether the student is a debtor. (Categorical)
+Stop services:
+```bash
+docker compose down
+```
 
-15.Tuition fees up to date: Whether the student's tuition fees are up to date. (Categorical)
+## Configuration
+Environment variables used by the app:
 
-16.Gender: The gender of the student. (Categorical)
+| Variable | Purpose | Example |
+|---|---|---|
+| `DB_USER` | PostgreSQL username | `sih_demo` |
+| `DB_PASSWORD` | PostgreSQL password | `SIH_DEMO` |
+| `DB_HOST` | PostgreSQL host | `localhost` or `db` |
+| `DB_NAME` | PostgreSQL database name | `user_db` |
+| `DB_PORT` | PostgreSQL port | `5432` |
 
-17.Scholarship holder: Whether the student is a scholarship holder. (Categorical)
+Notes:
+- `.env` is loaded via `python-dotenv`.
+- For Docker Compose, `DB_HOST=db`.
+- For local host-based DB, `DB_HOST=localhost`.
 
-18.Age at enrollment: The age of the student at the time of enrollment. (Numerical)
+## Application Routes
+| Route | Method(s) | Description |
+|---|---|---|
+| `/` | GET, POST | Main page; upload files and view predictions |
+| `/login` | GET, POST | User login |
+| `/register` | GET, POST | User registration |
+| `/student_details/<roll_no>` | GET | Student details + charts |
+| `/model_info` | GET | Returns model metric JSON |
+| `/send_mentor_alert` | POST | Sends email alert for high-risk students |
 
-19.International: Whether the student is an international student. (Categorical)
+## Model Artifacts and Scripts
+- `dropout_prediction.pkl`: Serialized trained model used in app inference.
+- `xgboost_model.json`: Model artifact from training workflow.
+- `ml_model.py`: SHAP-based interpretability analysis script.
+- `update_metrics.py`: Utility to compute model metrics and update `MODEL_METRICS` in `app.py`.
+- `prediction.ipynb`: Notebook for experimentation/training workflow.
 
-20.Curricular units 1st sem (credited): The number of curricular units credited by the student in the first semester. (Numerical)
+## Known Limitations
+- Email alert route uses placeholder sender credentials and must be configured before production use.
+- In-memory `students_data` is not persisted and currently not populated for all flows.
+- Input schema is strict; uploaded files must match expected field names.
+- Security hardening (secret management/session config/production WSGI) is still needed for production deployment.
 
-21.Curricular units 1st sem (enrolled): The number of curricular units enrolled by the student in the first semester. (Numerical)
+## Dataset Source
+- Kaggle:  
+  https://www.kaggle.com/datasets/thedevastator/higher-education-predictors-of-student-retention
 
-22.Curricular units 1st sem (evaluations): The number of curricular units evaluated by the student in the first semester. (Numerical)
+---
 
-23.Curricular units 1st sem (approved): The number of curricular units approved by the student in the first semester. (Numerical)
-
-24.Attendance
-
-
-
-| S/N | Field                                | Description                                                       | Categories/Values                                                                                                    |
-|-----|---------------------------------------|-------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
-| 1   | Marital status                       | The marital status of the student                                 | 1—Single, 2—Married, 3—Widower, 4—Divorced, 5—Facto union, 6—Legally separated                                       |
-| 2   | Application mode                     | Method of application used by student                             | 1—1st phase—general contingent, 2—Ordinance No. 612/93, 3—1st phase—special contingent (Azores Island), ... , 18—Change in institution/course (International) |
-| 3   | Application order                    | The order in which the student applied                            | Numeric                                                                                                               |
-| 4   | Course                               | The course taken by the student                                   | 1—Biofuel Production Technologies, 2—Animation and Multimedia Design, 3—Social Service (evening), ... , 17—Management (evening) |
-| 5   | Daytime/evening attendance           | Whether the student attends classes during the day or evening     | 1—Daytime, 0—Evening                                                                                                 |
-| 6   | Previous qualification               | Qualification obtained before enrolling in higher education       | 1—Secondary education, 2—Higher ed bachelor’s, 3—Higher ed degree, 4—Master’s, 5—Doctorate, ... , 17—Master’s (2nd cycle) |
-| 7   | Nationality                          | Nationality of the student                                        | 1—Portuguese, 2—German, 3—Spanish, 4—Italian, 5—Dutch, 6—English, ... , 21—Colombian                                |
-| 8   | Mother’s qualification / Father’s qualification | Qualification of student’s parents                        | 1—Secondary education, 2—Bachelor’s, 3—Degree, 4—Master’s, 5—Doctorate, ... , 34—Doctorate (3rd cycle)              |
-| 9   | Mother’s occupation / Father’s occupation | Occupation of student’s parents                              | 1—Student, 2—Legislative/Executive, 3—Specialists, 4—Technicians, 5—Admin staff, ... , 46—Street vendors             |
-| 10  | Displaced                            | Whether the student is displaced                                  | 1—Yes, 0—No                                                                                                          |
-| 11  | Educational special needs            | Whether the student has special educational needs                 | 1—Yes, 0—No                                                                                                          |
-| 12  | Debtor                               | Whether the student is a debtor                                   | 1—Yes, 0—No                                                                                                          |
-| 13  | Tuition fees up to date              | Whether tuition fees are up to date                               | 1—Yes, 0—No                                                                                                          |
-| 14  | Gender                               | Gender of the student                                             | 1—Male, 0—Female                                                                                                     |
-| 15  | Scholarship holder                   | Whether the student holds a scholarship                           | 1—Yes, 0—No                                                                                                          |
-| 16  | Age at enrollment                    | Age of the student at enrollment                                  | Numeric                                                                                                               |
-| 17  | International                        | Whether the student is an international student                   | 1—Yes, 0—No                                                                                                          |
-| 18  | Curricular units 1st & 2nd sem (credited)  | Number of curricular units credited                               | Numeric                                                                                                               |
-| 19  | Curricular units 1st & 2nd sem (enrolled)  | Number of curricular units enrolled                               | Numeric                                                                                                               |
-| 20  | Curricular units 1st & 2nd sem (evaluations) | Number of curricular units evaluated                             | Numeric                                                                                                               |
-| 21  | Curricular units 1st & 2nd sem (approved) | Number of curricular units approved                              | Numeric                                                                                                               |
-| 22  | Curricular units 1st & 2nd sem (grade) | Number of curricular units grade                                 | Numeric                                                                                                               |
-| 23  | Unemployment rate                    | Unemployment rate (%)                                             | Percentage                                                                                                            |
-| 24  | Inflation rate                       | Inflation rate (%)                                                | Percentage                                                                                                            |
-| 25  | GDP                                  | GDP per capita (USD)                                              | Numeric                                                                                                               |
-| 26  | Target                               | Status of the student                                             | Graduate, Dropout, Enrolled                                                                                           |
-
-
-
+If you use this project in institutional pilots or SIH demonstrations, consider sharing improvements for data quality checks, model explainability, and intervention workflows.
