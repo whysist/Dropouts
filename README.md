@@ -194,7 +194,7 @@ Notes:
 
 ## Known Limitations
 - Email alert route uses placeholder sender credentials and must be configured before production use.
-- In-memory `students_data` is not persisted and currently not populated for all flows.
+- `students_data` is an in-memory list and is not populated from `/` prediction results; as a result, mentor alerts and direct `student_details/<roll_no>` lookups may return no student data unless this list is explicitly filled in runtime.
 - Input schema is strict; uploaded files must match expected field names.
 - Security hardening (secret management/session config/production WSGI) is still needed for production deployment.
 
