@@ -194,9 +194,9 @@ Notes:
 
 ## Known Limitations
 - Email alert route uses placeholder sender credentials and must be configured before production use.
-- `students_data` is an in-memory list and is not populated from `/` prediction results; as a result, mentor alerts and direct `student_details/<roll_no>` lookups may return no student data unless this list is explicitly filled in runtime.
+- `students_data` is an in-memory list and is not populated from `/` prediction results; as a result, mentor alerts and direct `student_details/<roll_no>` lookups may return no student data unless the app explicitly assigns uploaded prediction rows to `students_data` during request handling.
 - Input schema is strict; uploaded files must match expected field names.
-- Security hardening (secret management/session config/production WSGI) is still needed for production deployment.
+- Production security hardening is still needed (for example: HTTPS/TLS termination, secure cookie/session settings, CSRF protection on form routes, rotation of secrets outside `.env`, and running behind a production WSGI server instead of Flask debug mode).
 
 ## Dataset Source
 - Kaggle:  
